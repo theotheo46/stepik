@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 )
 
 func main() {
@@ -10,11 +11,11 @@ func main() {
 	// не меняйте этот блок
 	var s string
 	fmt.Scan(&s)
-	//d, _ := time.ParseDuration(s)
+	d, _ := time.ParseDuration(s)
 
 	// выведите исходное значение
 	// и количество минут в нем
 	// в формате "исходное = X min"
 	// используйте метод .Minutes() объекта d
-	fmt.Println("Duration   ")
+	fmt.Println(s, "=", d.Minutes(), "min")
 }

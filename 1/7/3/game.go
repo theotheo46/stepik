@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 )
@@ -80,27 +79,62 @@ func (s step) String() string {
 
 // invalidStepError - ошибка, которая возникает,
 // когда команда шага не совместима с объектом
-type invalidStepError any
+type invalidStepError struct {
+	st step
+}
+
+func (e invalidStepError) Error() string {
+	return fmt.Sprintf("thing %s is not compatible with command %s", e.st.obj, e.st.cmd)
+}
 
 // notEnoughObjectsError - ошибка, которая возникает,
 // когда в игре закончились объекты определенного типа
-type notEnoughObjectsError any
+type notEnoughObjectsError struct {
+	th thing
+}
+
+func (e notEnoughObjectsError) Error() string {
+	return fmt.Sprintf("there are no %ss left", e.th)
+
+}
 
 // commandLimitExceededError - ошибка, которая возникает,
 // когда игрок превысил лимит на выполнение команды
-type commandLimitExceededError any
+type commandLimitExceededError struct {
+	err string
+}
+
+func (e commandLimitExceededError) Error() string {
+	return e.err
+
+}
 
 // objectLimitExceededError - ошибка, которая возникает,
 // когда игрок превысил лимит на количество объектов
 // определенного типа в инвентаре
-type objectLimitExceededError any
+type objectLimitExceededError struct {
+	th thing
+}
+
+func (e objectLimitExceededError) Error() string {
+	return fmt.Sprintf("you already have a %s", e.th)
+
+}
 
 // gameOverError - ошибка, которая произошла в игре
 type gameOverError struct {
 	// количество шагов, успешно выполненных
 	// до того, как произошла ошибка
 	nSteps int
-	// ...
+	err    error
+}
+
+func (e gameOverError) Error() string {
+	return fmt.Sprintf("on the %d step we have game over error: %v", e.nSteps, e.err)
+}
+
+func (e gameOverError) Unwrap() error {
+	return e.err
 }
 
 // player - игрок
@@ -131,17 +165,17 @@ func (p *player) do(cmd command, obj thing) error {
 	switch cmd {
 	case eat:
 		if p.nEaten > 1 {
-			return errors.New("you don't want to eat anymore")
+			return commandLimitExceededError{"you don't want to eat anymore"}
 		}
 		p.nEaten++
 	case take:
 		if p.has(obj) {
-			return fmt.Errorf("you already have a %s", obj)
+			return objectLimitExceededError{obj}
 		}
 		p.inventory = append(p.inventory, obj)
 	case talk:
 		if p.nDialogs > 0 {
-			return errors.New("you don't want to talk anymore")
+			return commandLimitExceededError{"you don't want to talk anymore"}
 		}
 		p.nDialogs++
 	}
@@ -173,21 +207,21 @@ func (g *game) has(obj thing) bool {
 func (g *game) execute(st step) error {
 	// проверяем совместимость команды и объекта
 	if !st.isValid() {
-		return fmt.Errorf("cannot %s", st)
+		return gameOverError{g.nSteps, invalidStepError{st}}
 	}
 
 	// когда игрок берет или съедает предмет,
 	// тот пропадает из игрового мира
 	if st.cmd == take || st.cmd == eat {
 		if !g.has(st.obj) {
-			return fmt.Errorf("there are no %ss left", st.obj)
+			return gameOverError{g.nSteps, notEnoughObjectsError{st.obj}}
 		}
 		g.things[st.obj.name]--
 	}
 
 	// выполняем команду от имени игрока
 	if err := g.player.do(st.cmd, st.obj); err != nil {
-		return err
+		return gameOverError{g.nSteps, err}
 	}
 
 	g.nSteps++
@@ -221,7 +255,8 @@ func main() {
 		{eat, apple},
 		{talk, bob},
 		{take, coin},
-		{eat, mushroom},
+		{eat, apple},
+		{eat, apple},
 	}
 
 	for _, st := range steps {

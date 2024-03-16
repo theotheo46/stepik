@@ -35,7 +35,7 @@ func letters(s string) bool {
 // minlen возвращает валидатор, который проверяет, что длина
 // строки согласно utf8.RuneCountInString() - не меньше указанной
 func minlen(length int) validator {
-	return func(s string) bool { return utf8.RuneCountInString(s) >= len(s) }
+	return func(s string) bool { return utf8.RuneCountInString(s) >= length }
 }
 
 // and возвращает валидатор, который проверяет, что все

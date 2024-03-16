@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 )
@@ -95,18 +96,16 @@ type notEnoughObjectsError struct {
 
 func (e notEnoughObjectsError) Error() string {
 	return fmt.Sprintf("there are no %ss left", e.th)
-
 }
 
 // commandLimitExceededError - ошибка, которая возникает,
 // когда игрок превысил лимит на выполнение команды
 type commandLimitExceededError struct {
-	err string
+	cmd command
 }
 
 func (e commandLimitExceededError) Error() string {
-	return e.err
-
+	return fmt.Sprintf("%s less", e.cmd)
 }
 
 // objectLimitExceededError - ошибка, которая возникает,
@@ -165,7 +164,7 @@ func (p *player) do(cmd command, obj thing) error {
 	switch cmd {
 	case eat:
 		if p.nEaten > 1 {
-			return commandLimitExceededError{"you don't want to eat anymore"}
+			return commandLimitExceededError{cmd}
 		}
 		p.nEaten++
 	case take:
@@ -175,7 +174,7 @@ func (p *player) do(cmd command, obj thing) error {
 		p.inventory = append(p.inventory, obj)
 	case talk:
 		if p.nDialogs > 0 {
-			return commandLimitExceededError{"you don't want to talk anymore"}
+			return commandLimitExceededError{cmd}
 		}
 		p.nDialogs++
 	}
@@ -243,8 +242,22 @@ func newGame() *game {
 // giveAdvice() возвращает совет, который
 // поможет игроку избежать ошибки err в будущем
 func giveAdvice(err error) string {
-	// ...
-	return ""
+	var e1 invalidStepError
+	var e2 notEnoughObjectsError
+	var e3 commandLimitExceededError
+	var e4 objectLimitExceededError
+
+	if errors.As(err, &e1) {
+		return fmt.Sprintf("things like '%s %s' are impossible", e1.st.cmd, e1.st.obj)
+	} else if errors.As(err, &e2) {
+		return fmt.Sprintf("be careful with scarce %ss", e2.th.name)
+	} else if errors.As(err, &e3) {
+		return fmt.Sprintf("%s less", e3.cmd)
+	} else if errors.As(err, &e4) {
+		return fmt.Sprintf("don't be greedy, 1 %s is enough", e4.th.name)
+	} else {
+		return ""
+	}
 }
 
 // конец решения

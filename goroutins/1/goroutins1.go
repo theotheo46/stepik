@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"unicode"
 )
 
@@ -14,35 +13,22 @@ type counter map[string]int
 // countDigitsInWords считает количество цифр в словах фразы
 func countDigitsInWords(phrase string) counter {
 	words := strings.Fields(phrase)
-	syncStats := sync.Map{}
-
-	var wg sync.WaitGroup
+	counted := make(chan int)
 
 	// начало решения
+	stats := counter{}
 
 	for _, word := range words {
-		wg.Add(1)
 		go func(word string) {
-			defer wg.Done()
 			count := countDigits(word)
-			syncStats.Store(word, count)
+			counted <- count
 		}(word)
-
+		count := <-counted
+		stats[word] = count
 	}
 
-	wg.Wait()
-	// Посчитайте количество цифр в словах,
-	// используя отдельную горутину для каждого слова.
-
-	// Чтобы записать результаты подсчета,
-	// используйте syncStats.Store(word, count)
-
-	// В результате syncStats должна содержать слова
-	// и количество цифр в каждом.
-
 	// конец решения
-
-	return asStats(&syncStats)
+	return stats
 }
 
 // countDigits возвращает количество цифр в строке
@@ -56,16 +42,6 @@ func countDigits(str string) int {
 	return count
 }
 
-// asStats преобразует статистику из sync.Map в обычную карту
-func asStats(m *sync.Map) counter {
-	stats := counter{}
-	m.Range(func(word, count any) bool {
-		stats[word.(string)] = count.(int)
-		return true
-	})
-	return stats
-}
-
 // printStats печатает слова и количество цифр в каждом
 func printStats(stats counter) {
 	for word, count := range stats {
@@ -75,6 +51,6 @@ func printStats(stats counter) {
 
 func main() {
 	phrase := "0ne 1wo thr33 4068"
-	counts := countDigitsInWords(phrase)
-	printStats(counts)
+	stats := countDigitsInWords(phrase)
+	printStats(stats)
 }

@@ -12,7 +12,7 @@ func gather(funcs []func() any) []any {
 	var result []any
 	var done_arr []chan any
 	for _, f := range funcs {
-		fmt.Println(f())
+		//fmt.Println(f())
 		done := make(chan any, 1)
 		done_arr = append(done_arr, done)
 		go func(f func() any) {

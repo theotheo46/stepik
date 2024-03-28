@@ -1,29 +1,53 @@
+package main
+
+import (
+	"fmt"
+)
+
 // начало решения
 
-// исправьте count() и take(),
-// чтобы main() могла их отменить
-
 // count отправляет в канал числа от start до бесконечности
-func count(start int) <-chan int {
+func count(cancel <-chan struct{}, start int) <-chan int {
 	out := make(chan int)
 	go func() {
+		defer close(out)
 		for i := start; ; i++ {
-			out <- i
+			select {
+			case out <- i:
+			case <-cancel:
+				return
+			}
 		}
 	}()
 	return out
 }
 
 // take выбирает первые n чисел из in и отправляет в выходной канал
-func take(in <-chan int, n int) <-chan int {
+func take(cancel <-chan struct{}, in <-chan int, n int) <-chan int {
 	out := make(chan int)
 	go func() {
+		defer close(out)
 		for i := 0; i < n; i++ {
-			out <- <-in
+			select {
+			case out <- <-in: // (1)
+			case <-cancel: // (2)
+				return
+			}
 		}
-		close(out)
 	}()
 	return out
 }
 
 // конец решения
+
+func main() {
+	cancel := make(chan struct{})
+	defer close(cancel)
+
+	stream := take(cancel, count(cancel, 10), 5)
+	first := <-stream
+	second := <-stream
+	third := <-stream
+
+	fmt.Println(first, second, third)
+}

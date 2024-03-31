@@ -50,8 +50,10 @@ func (trn *tournament) calcRating() rating {
 		switch rslt := match.result; rslt {
 		case 'W':
 			rtg[match.first] = rtg[match.first] + 3
+			rtg[match.second] = rtg[match.second] + 0
 		case 'L':
 			rtg[match.second] = rtg[match.second] + 3
+			rtg[match.first] = rtg[match.first] + 0
 		case 'D':
 			rtg[match.first] = rtg[match.first] + 1
 			rtg[match.second] = rtg[match.second] + 1

@@ -10,7 +10,7 @@ import (
 func gather(funcs []func() any) []any {
 	// начало решения
 	var result []any
-	var done_arr []chan any
+	done := make(chan any, len(funcs))
 	for _, f := range funcs {
 		fmt.Println(f())
 		done := make(chan any, 1)

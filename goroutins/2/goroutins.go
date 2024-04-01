@@ -23,30 +23,30 @@ type pair struct {
 // выбирая очередные слова с помощью next()
 func countDigitsInWords(next nextFunc) counter {
 	counted := make(chan pair)
-	// начало решения
-	go func() {
-		for {
-			word := next()
-			count := countDigits(word)
-			counted <- pair{word, count}
-			if word == "" {
-				return
+		// начало решения
+		go func() {
+			for {
+				word := next()
+				count := countDigits(word)
+				counted <- pair{word, count}
+				if word == "" {
+					return
+				}
 			}
-		}
-	}()
+		}()
 
-	stats := counter{}
-	for {
-		pair := <-counted
-		// как понять, что слова закончились?
-		if pair.word == "" {
-			break
+		stats := counter{}
+		for {
+			pair := <-counted
+			// как понять, что слова закончились?
+			if pair.word == "" {
+				break
+			}
+			// откуда взять слово?
+			stats[pair.word] = pair.count
 		}
-		// откуда взять слово?
-		stats[pair.word] = pair.count
-	}
 
-	// конец решения
+		// конец решения
 
 	return stats
 }

@@ -55,7 +55,7 @@ func takeUnique(cancel <-chan struct{}, in <-chan string) <-chan string {
 	go func() {
 		defer close(out)
 		for word := range in {
-			if isCountMoreOne(word) {
+			if !isCountMoreOne(word) {
 				out <- word
 			}
 		}
@@ -72,7 +72,8 @@ func reverse(cancel <-chan struct{}, in <-chan string) <-chan string {
 		for {
 			select {
 			case word, _ := <-in:
-				out <- ReverseString(word)
+				reversed_word := ReverseString(word)
+				out <- word + " -> " + reversed_word
 			case <-cancel:
 				return
 			}
@@ -112,8 +113,8 @@ func merge(cancel <-chan struct{}, in1, in2 <-chan string) <-chan string {
 
 // печатает первые n результатов
 func print(cancel <-chan struct{}, in <-chan string, n int) {
-	for word := range in {
-		fmt.Println(word)
+	for i := 0; i < n; i++ {
+		fmt.Println(<-in)
 	}
 }
 

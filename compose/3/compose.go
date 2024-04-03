@@ -54,9 +54,21 @@ func takeUnique(cancel <-chan struct{}, in <-chan string) <-chan string {
 	out := make(chan string)
 	go func() {
 		defer close(out)
-		for word := range in {
-			if !isCountMoreOne(word) {
-				out <- word
+		for {
+			select {
+			case word, ok := <-in:
+				if !ok {
+					return
+				}
+				if !isCountMoreOne(word) {
+					select {
+					case out <- word:
+					case <-cancel:
+						return
+					}
+				}
+			case <-cancel:
+				return
 			}
 		}
 	}()
@@ -69,11 +81,9 @@ func reverse(cancel <-chan struct{}, in <-chan string) <-chan string {
 	out := make(chan string)
 	go func() {
 		defer close(out)
-		for {
+		for word := range in {
 			select {
-			case word, _ := <-in:
-				reversed_word := ReverseString(word)
-				out <- word + " -> " + reversed_word
+			case out <- word + " -> " + ReverseString(word):
 			case <-cancel:
 				return
 			}
@@ -114,8 +124,22 @@ func merge(cancel <-chan struct{}, in1, in2 <-chan string) <-chan string {
 // печатает первые n результатов
 func print(cancel <-chan struct{}, in <-chan string, n int) {
 	for i := 0; i < n; i++ {
-		fmt.Println(<-in)
+		//for {
+		select {
+		case word, ok := <-in:
+			if ok {
+				fmt.Println(word)
+			}
+		case <-cancel:
+			return
+		}
 	}
+	/*
+		 	select {
+			case <-cancel:
+				return
+			}
+	*/
 }
 
 // конец решения
@@ -140,4 +164,5 @@ func main() {
 	c3_2 := reverse(cancel, c2)
 	c4 := merge(cancel, c3_1, c3_2)
 	print(cancel, c4, 10)
+	//http.ListenAndServe("localhost:8090", nil)
 }

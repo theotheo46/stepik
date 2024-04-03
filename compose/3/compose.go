@@ -112,8 +112,8 @@ func merge(cancel <-chan struct{}, in1, in2 <-chan string) <-chan string {
 
 // печатает первые n результатов
 func print(cancel <-chan struct{}, in <-chan string, n int) {
-	for word := range in {
-		fmt.Println(word)
+	for i := 0; i < n; i++ {
+		fmt.Println(<-in)
 	}
 }
 

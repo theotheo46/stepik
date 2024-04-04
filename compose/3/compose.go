@@ -97,24 +97,27 @@ func merge(cancel <-chan struct{}, in1, in2 <-chan string) <-chan string {
 	out := make(chan string)
 	go func() {
 		defer close(out)
-		for in1 != nil || in2 != nil {
+		//for in1 != nil || in2 != nil {
+		for {
 			select {
 			case val1, ok := <-in1:
-				if ok {
-					//fmt.Println(val1)
-					out <- val1
-				} else {
-					in1 = nil
+				if !ok {
+					return
+				}
+				select {
+				case out <- val1:
+				case <-cancel:
+					return
 				}
 			case val2, ok := <-in2:
-				if ok {
-					out <- val2
-					//fmt.Println(val2)
-				} else {
-					in2 = nil
+				if !ok {
+					return
 				}
-			case <-cancel:
-				return
+				select {
+				case out <- val2:
+				case <-cancel:
+					return
+				}
 			}
 		}
 	}()

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -10,51 +11,66 @@ import (
 
 // TimeOfDay описывает время в пределах одного дня
 type TimeOfDay struct {
-	// ...
+	t time.Time
 }
 
 // Hour возвращает часы в пределах дня
 func (t TimeOfDay) Hour() int {
-	return 0
+	return t.t.Hour()
 }
 
 // Minute возвращает минуты в пределах часа
 func (t TimeOfDay) Minute() int {
-	return 0
+	return t.t.Minute()
 }
 
 // Second возвращает секунды в пределах минуты
 func (t TimeOfDay) Second() int {
-	return 0
+	return t.t.Second()
 }
 
 // String возвращает строковое представление времени
 // в формате чч:мм:сс TZ (например, 12:34:56 UTC)
 func (t TimeOfDay) String() string {
-	return ""
+	return fmt.Sprintf("%02d:%02d:%02d %s",
+		t.t.Hour(), t.t.Minute(), t.t.Second(), t.t.Location().String())
+
 }
 
 // Equal сравнивает одно время с другим.
 // Если у t и other разные локации - возвращает false.
 func (t TimeOfDay) Equal(other TimeOfDay) bool {
-	return false
+	if t.t.Location().String() != other.t.Location().String() {
+		return false
+	} else {
+		return t.t.Equal(other.t)
+	}
 }
 
 // Before возвращает true, если время t предшествует other.
 // Если у t и other разные локации - возвращает ошибку.
 func (t TimeOfDay) Before(other TimeOfDay) (bool, error) {
-	return false, errors.New("not implemented")
+	if t.t.Location().String() != other.t.Location().String() {
+		return false, errors.New("not implemented")
+	} else {
+		return t.t.Before(other.t), nil
+	}
 }
 
 // After возвращает true, если время t идет после other.
 // Если у t и other разные локации - возвращает ошибку.
 func (t TimeOfDay) After(other TimeOfDay) (bool, error) {
-	return false, errors.New("not implemented")
+	if t.t.Location().String() != other.t.Location().String() {
+		return false, errors.New("not implemented")
+	} else {
+		return t.t.After(other.t), nil
+	}
 }
 
 // MakeTimeOfDay создает время в пределах дня
 func MakeTimeOfDay(hour, min, sec int, loc *time.Location) TimeOfDay {
-	return TimeOfDay{}
+	t := time.Date(1970, 1, 1, hour, min, sec, 0, loc)
+	return TimeOfDay{t}
 }
 
 // конец решения

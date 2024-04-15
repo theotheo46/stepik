@@ -1,7 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
 )
 
 // StatusErr описывает ситуацию, когда на запрос
@@ -22,6 +26,23 @@ func (e StatusErr) Error() string {
 //
 // Считает ошибкой любые ответы с HTTP-статусом, отличным от 2xx.
 func httpGet(uri string, headers map[string]string, params map[string]string, timeout int) (map[string]any, error) {
+	client := http.Client{Timeout: time.Duration(timeout) * time.Millisecond}
+	resp, err := client.Get(uri) // (1)
+	if err != nil {
+		return nil, err
+	}
+	status := resp.Status
+	c := status[0]
+	if c != '2' {
+		return nil, errors.New("invalid response status: " + status)
+	}
+	defer resp.Body.Close()            // (1)
+	body, err := io.ReadAll(resp.Body) // (2)
+	if err != nil {
+		return nil, err
+	}
+	s := string(body)
+	fmt.Println(s)
 	return nil, nil
 }
 

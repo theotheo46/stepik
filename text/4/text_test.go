@@ -15,7 +15,7 @@ func slugify(src string) string {
 	sss := re.FindAllString(strings.ToLower(src), -1)
 	return strings.Join(sss, "-")
 }
-
+	
 // конец решения
 
 func Test(t *testing.T) {

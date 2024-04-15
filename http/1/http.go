@@ -32,6 +32,7 @@ func httpGet(uri string, headers map[string]string, params map[string]string, ti
 		return nil, err
 	}
 	status := resp.Status
+	code := resp.StatusCode
 	c := status[0]
 	if c != '2' {
 		return nil, errors.New("invalid response status: " + status)

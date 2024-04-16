@@ -1,10 +1,11 @@
 package main
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -26,31 +27,70 @@ func (e StatusErr) Error() string {
 //
 // Считает ошибкой любые ответы с HTTP-статусом, отличным от 2xx.
 func httpGet(uri string, headers map[string]string, params map[string]string, timeout int) (map[string]any, error) {
+	var retmap map[string]any
+	if uri == "" {
+		return retmap, StatusErr{0, "URL is empty"}
+	}
 	client := http.Client{Timeout: time.Duration(timeout) * time.Millisecond}
-	resp, err := client.Get(uri) // (1)
+	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
-		return nil, err
+		return retmap, err
+	}
+
+	if params != nil {
+		params1 := url.Values{}
+		for k, v := range params {
+			params1.Add(k, v)
+		}
+		req.URL.RawQuery = params1.Encode()
+	}
+	if headers != nil {
+		for k, v := range headers {
+			req.Header.Add(k, v)
+		}
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return retmap, err
 	}
 	status := resp.Status
 	code := resp.StatusCode
 	c := status[0]
 	if c != '2' {
-		return nil, errors.New("invalid response status: " + status)
+		return retmap, StatusErr{code, status}
 	}
 	defer resp.Body.Close()            // (1)
 	body, err := io.ReadAll(resp.Body) // (2)
 	if err != nil {
-		return nil, err
+		return retmap, err
 	}
-	s := string(body)
-	fmt.Println(s)
-	return nil, nil
+
+	if len(body) > 0 {
+		err = json.Unmarshal(body, &retmap)
+		if err != nil {
+			return retmap, err
+		}
+	}
+	//fmt.Println(s)
+	return retmap, nil
 }
 
 // конец решения
 
 func main() {
+
 	{
+		const uri = ""
+		data, err := httpGet(uri, nil, nil, 3000)
+		fmt.Printf("GET %v\n", uri)
+		fmt.Println(data, err)
+		fmt.Println()
+
+	}
+
+	{
+
 		// GET-запрос
 		const uri = "https://httpbingo.org/json"
 		data, err := httpGet(uri, nil, nil, 3000)
